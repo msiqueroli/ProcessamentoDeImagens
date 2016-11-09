@@ -71,7 +71,7 @@ public class Imagem {
 	}
 	
 	/*deep copy*/
-	BufferedImage copiaProfunda( BufferedImage bufferedImage ) {
+	BufferedImage copiarImagem( BufferedImage bufferedImage ) {
 		ColorModel cm;
 		boolean isAlphaPremultiplied;
 		WritableRaster raster;

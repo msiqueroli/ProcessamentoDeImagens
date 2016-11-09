@@ -1,8 +1,10 @@
 package principal;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.awt.event.ActionEvent;
 import javax.swing.ImageIcon;
@@ -39,6 +41,8 @@ public class Tela extends JFrame {
 	private JTextField textField;
 	private JButton btnImportarImagem;
 	private JButton btnNewButton_1;
+	private JLabel lblImagemOriginal_1;
+	private JLabel lblImagemFiltrada;
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -88,14 +92,43 @@ public class Tela extends JFrame {
 		pnlImagens.add(pnlImagemAlterada);
 		pnlImagemOriginal.add(lblImagemOriginal);
 		pnlImagemAlterada.add(lblImagemAlterada);
+		
+		textField = new JTextField();
+		textField.setText("127");
+		textField.setBounds(95, 40, 133, 20);
+		pnlImagens.add(textField);
+		textField.setColumns(10);
 
 		JComboBox comboBox = new JComboBox();
-		comboBox.setBounds(10, 11, 133, 20);
+		comboBox.setBounds(95, 11, 133, 20);
 		pnlImagens.add(comboBox);
+		
+		JLabel lblLimiar = new JLabel("Limiar:");
+		lblLimiar.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblLimiar.setBounds(13, 42, 99, 14);
+		pnlImagens.add(lblLimiar);
 
 		comboBox.addItem("Binarização");
 		comboBox.addItem("Equalização");
 		comboBox.addItem("Quantização");
+
+		comboBox.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (comboBox.getSelectedItem().toString().equals("Binarização")) {
+					lblLimiar.setText("Limiar:");
+					textField.enable();
+					
+				}
+				else if (comboBox.getSelectedItem().toString().equals("Equalização")) {
+					lblLimiar.setText("");
+					textField.disable();
+				}
+				else if (comboBox.getSelectedItem().toString().equals("Quantização")) {
+					lblLimiar.setText("Nº de Tons:");
+					textField.enable();
+				}
+			}
+		});
 
 		JButton btnNewButton = new JButton("Aplicar Filtro");
 		btnNewButton.addActionListener(new ActionListener() {
@@ -103,39 +136,35 @@ public class Tela extends JFrame {
 				if (imagemFiltrada == null) {
 					JOptionPane.showMessageDialog(null, "Importe uma imagem.");
 				} else if (comboBox.getSelectedItem().toString().equals("Binarização")) {
-					imagemFiltrada.setImagem(imagemOriginal.copiaProfunda(imagemOriginal.getImagem()));
-					filtros.Binarizacao(imagemFiltrada);
+					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+					Binarizacao(imagemFiltrada);
 					histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
 					lblImagemAlterada.repaint();
 				} else if (comboBox.getSelectedItem().toString().equals("Equalização")) {
-					imagemFiltrada.setImagem(imagemOriginal.copiaProfunda(imagemOriginal.getImagem()));
-					filtros.Equalizacao(imagemFiltrada, histogramaOriginal.getHistograma());
+					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+					Equalizacao(imagemFiltrada, histogramaOriginal.getHistograma());
 					histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
 					lblImagemAlterada.repaint();
 				} else if (comboBox.getSelectedItem().toString().equals("Quantização")) {
-					imagemFiltrada.setImagem(imagemOriginal.copiaProfunda(imagemOriginal.getImagem()));
-					filtros.Quantizacao(imagemFiltrada);
-					histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
-					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
-					lblImagemAlterada.repaint();
+					try{
+						imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+						Quantizacao(imagemFiltrada);
+						histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
+						lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+						lblImagemAlterada.repaint();
+					}
+					catch (Exception e1) {
+						imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+						lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+						lblImagemAlterada.repaint();
+					}					
 				}
 			}
 		});
-		btnNewButton.setBounds(15, 66, 130, 23);
+		btnNewButton.setBounds(13, 70, 130, 23);
 		pnlImagens.add(btnNewButton);
-
-		JLabel lblLimiar = new JLabel("Limiar:");
-		lblLimiar.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		lblLimiar.setBounds(13, 42, 46, 14);
-		pnlImagens.add(lblLimiar);
-
-		textField = new JTextField();
-		textField.setText("127");
-		textField.setBounds(58, 40, 86, 20);
-		pnlImagens.add(textField);
-		textField.setColumns(10);
 
 		btnImportarImagem = new JButton("Importar Imagem");
 		btnImportarImagem.addActionListener(new ActionListener() {
@@ -155,6 +184,9 @@ public class Tela extends JFrame {
 
 					lblImagemOriginal.setIcon(new ImageIcon(imagemOriginal.getImagem()));
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+					
+					lblImagemOriginal_1.setText("Imagem Original");
+					lblImagemFiltrada.setText("Imagem Filtrada");
 
 				} catch (Exception e) {
 
@@ -164,19 +196,160 @@ public class Tela extends JFrame {
 				}
 			}
 		});
-		btnImportarImagem.setBounds(153, 10, 115, 23);
+		btnImportarImagem.setBounds(249, 11, 115, 23);
 		pnlImagens.add(btnImportarImagem);
 
 		btnNewButton_1 = new JButton("Resetar Imagem");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (imagemFiltrada != null) {
-					imagemFiltrada = imagemOriginal;
+				if (imagemOriginal != null) {
+					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+				}
+				else{
+					System.out.println("Clicoou!");
 				}
 			}
 		});
-		btnNewButton_1.setBounds(154, 39, 114, 23);
+		btnNewButton_1.setBounds(249, 40, 114, 23);
 		pnlImagens.add(btnNewButton_1);
+
+		JLabel lblFiltro = new JLabel("Filtro:");
+		lblFiltro.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblFiltro.setBounds(13, 12, 46, 14);
+		pnlImagens.add(lblFiltro);
+		
+		lblImagemOriginal_1 = new JLabel("");
+		lblImagemOriginal_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblImagemOriginal_1.setBounds(134, 125, 115, 20);
+		pnlImagens.add(lblImagemOriginal_1);
+		
+		lblImagemFiltrada = new JLabel("");
+		lblImagemFiltrada.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblImagemFiltrada.setBounds(499, 125, 115, 20);
+		pnlImagens.add(lblImagemFiltrada);
+	}
+	
+	public BufferedImage Quantizacao( Imagem imagem ){
+		int tons;
+		int tomAtual;
+		RGB rgb;
+		
+		tons = 256 / ( Integer.parseInt( textField.getText() ) - 1 );
+		
+		for( int j = 0; j < imagem.getColunas(); j++ ){
+			for( int i = 0; i < imagem.getLinhas(); i++ ){
+				rgb = new RGB( imagem.getImagem().getRGB( j, i ) );
+				tomAtual = 0;
+		        
+		        while( rgb.getRed() > tomAtual )
+		        {
+		        	tomAtual += tons;
+		        }
+		        
+		        if(tomAtual > 255)
+		        {
+		        	imagem.getImagem().setRGB( j,
+		        				   			   i,
+		        				   			   new Color(255, 255, 255).getRGB() );
+		        }
+		        else
+		        {
+		        	imagem.getImagem().setRGB( j,
+		        				   			   i,
+		        				   			   new Color(tomAtual, tomAtual, tomAtual).getRGB() );
+		        }
+			}
+		}
+		
+		return imagem.getImagem();
+	}
+	
+	public BufferedImage Binarizacao( Imagem imagem ){
+		int limiar;
+		int tipoBinarizacao;
+		RGB rgb;
+		
+		limiar = Integer.parseInt( textField.getText() ) - 1;
+
+		tipoBinarizacao = JOptionPane.showOptionDialog( new JFrame(),
+														"Aplicar binarização comum ou inversa?",
+														"Binarização",
+														JOptionPane.YES_NO_OPTION,
+														JOptionPane.QUESTION_MESSAGE,
+														null,
+														new Object[]{ "Comum", "Inversa" },
+														null );
+		
+		for( int j = 0; j < imagem.getColunas(); j++ ){
+			for( int i = 0; i < imagem.getLinhas(); i++ ){
+				rgb = new RGB( imagem.getImagem().getRGB(j, i) );
+
+				if( tipoBinarizacao == JOptionPane.YES_OPTION ){
+					if( rgb.getRed() < limiar ){
+						imagem.getImagem().setRGB( j,
+												   i,
+												   new Color(0, 0, 0).getRGB() );
+					}
+					else{
+						imagem.getImagem().setRGB( j,
+												   i,
+												   new Color(255, 255, 255).getRGB() );
+					}
+				}
+				
+				else{
+					if( rgb.getRed() < limiar ){
+						imagem.getImagem().setRGB( j,
+												   i,
+												   new Color(255, 255, 255).getRGB() );
+					}
+					else{
+						imagem.getImagem().setRGB( j,
+												   i,
+												   new Color(0, 0, 0).getRGB() );
+					}
+				}
+			}
+		}
+		
+		return imagem.getImagem();
+	}
+	
+	public BufferedImage Equalizacao( Imagem imagem, int[] histograma ){
+		int histogramaAux[];
+		long soma;
+		float fatorEscala;
+		int valor;
+		RGB rgb;
+		
+		histogramaAux = new int[ 256 ];
+		soma = 0;
+		fatorEscala = ( float ) ( 255.0 / ( imagem.getColunas() * imagem.getLinhas() ) );
+		valor = 0;
+		
+		for( int i = 0; i < histograma.length; i++ ){
+			soma += histograma[ i ];
+			valor = ( int )( soma * fatorEscala );
+			
+			if( valor > 255 ){
+				histogramaAux[ i ] = 255;
+			}
+			else{
+				histogramaAux[ i ] = valor;
+			}
+		}
+		
+		for( int j = 0; j < imagem.getColunas(); j++ ){
+			for ( int i = 0; i < imagem.getLinhas(); i++ ){
+				rgb = new RGB( imagem.getImagem().getRGB( j, i ) );
+		        imagem.getImagem().setRGB( j, i, new Color(	histogramaAux[ rgb.getRed() ],
+		    		   										histogramaAux[ rgb.getRed() ],
+		    		   										histogramaAux[ rgb.getRed() ] ).getRGB() );
+			}
+		}
+		/**/
+		
+		return imagem.getImagem();
 	}
 }
