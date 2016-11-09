@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 
 public class Histograma {
 	private int vetorHistograma[];
-	
 	public Histograma( BufferedImage imagem ){
 		int linhas;
 		int colunas;
