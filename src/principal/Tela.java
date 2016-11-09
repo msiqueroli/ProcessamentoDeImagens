@@ -5,6 +5,9 @@ import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ConvolveOp;
+import java.awt.image.Kernel;
 import java.io.File;
 import java.awt.event.ActionEvent;
 import javax.swing.ImageIcon;
@@ -60,13 +63,11 @@ public class Tela extends JFrame {
 	public Tela() throws ClassNotFoundException, InstantiationException, IllegalAccessException,
 			UnsupportedLookAndFeelException {
 
-		UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+		UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
 		setTitle("Processamento de Imagens - Marcos V. Siqueroli RA: 199563");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 751, 576);
 		this.setLocationRelativeTo(null);
-
-		Filtros filtros = new Filtros();
 
 		arquivo = null;
 		imagemOriginal = null;
@@ -92,17 +93,17 @@ public class Tela extends JFrame {
 		pnlImagens.add(pnlImagemAlterada);
 		pnlImagemOriginal.add(lblImagemOriginal);
 		pnlImagemAlterada.add(lblImagemAlterada);
-		
+
 		textField = new JTextField();
 		textField.setText("127");
-		textField.setBounds(95, 40, 133, 20);
+		textField.setBounds(95, 40, 133, 25);
 		pnlImagens.add(textField);
 		textField.setColumns(10);
 
 		JComboBox comboBox = new JComboBox();
 		comboBox.setBounds(95, 11, 133, 20);
 		pnlImagens.add(comboBox);
-		
+
 		JLabel lblLimiar = new JLabel("Limiar:");
 		lblLimiar.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		lblLimiar.setBounds(13, 42, 99, 14);
@@ -111,21 +112,27 @@ public class Tela extends JFrame {
 		comboBox.addItem("Binarização");
 		comboBox.addItem("Equalização");
 		comboBox.addItem("Quantização");
+		comboBox.addItem("Passa Alta");
+		comboBox.addItem("Operador Roberts");
 
 		comboBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (comboBox.getSelectedItem().toString().equals("Binarização")) {
 					lblLimiar.setText("Limiar:");
 					textField.enable();
-					
-				}
-				else if (comboBox.getSelectedItem().toString().equals("Equalização")) {
+
+				} else if (comboBox.getSelectedItem().toString().equals("Equalização")) {
 					lblLimiar.setText("");
 					textField.disable();
-				}
-				else if (comboBox.getSelectedItem().toString().equals("Quantização")) {
+				} else if (comboBox.getSelectedItem().toString().equals("Quantização")) {
 					lblLimiar.setText("Nº de Tons:");
 					textField.enable();
+				} else if (comboBox.getSelectedItem().toString().equals("Operador Roberts")) {
+					lblLimiar.setText("");
+					textField.disable();
+				} else if (comboBox.getSelectedItem().toString().equals("Passa Alta")) {
+					lblLimiar.setText("");
+					textField.disable();
 				}
 			}
 		});
@@ -148,29 +155,41 @@ public class Tela extends JFrame {
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
 					lblImagemAlterada.repaint();
 				} else if (comboBox.getSelectedItem().toString().equals("Quantização")) {
-					try{
+					try {
 						imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
 						Quantizacao(imagemFiltrada);
 						histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
 						lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
 						lblImagemAlterada.repaint();
-					}
-					catch (Exception e1) {
+					} catch (Exception e1) {
 						imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
 						lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
 						lblImagemAlterada.repaint();
-					}					
+					}
+				} else if (comboBox.getSelectedItem().toString().equals("Passa Alta")) {
+					System.out.println("Entrou");
+					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+					PassaAlta(imagemFiltrada);
+					histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
+					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+					lblImagemAlterada.repaint();
+				} else if (comboBox.getSelectedItem().toString().equals("Operador Roberts")) {
+					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
+					OperadorRoberts(imagemFiltrada);
+					histogramaAlterado = new Histograma(imagemFiltrada.getImagem());
+					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
+					lblImagemAlterada.repaint();
 				}
 			}
 		});
-		btnNewButton.setBounds(13, 70, 130, 23);
+		btnNewButton.setBounds(10, 91, 130, 23);
 		pnlImagens.add(btnNewButton);
 
 		btnImportarImagem = new JButton("Importar Imagem");
 		btnImportarImagem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				JFileChooser chooser = new JFileChooser();
-				chooser.setFileFilter(new FileNameExtensionFilter("JPG, GIF, BMP", "jpg", "gif", "bmp"));
+				chooser.setFileFilter(new FileNameExtensionFilter("JPG, GIF, BMP, PNG", "jpg", "gif", "bmp", "png"));
 				chooser.showOpenDialog(null);
 
 				try {
@@ -184,7 +203,7 @@ public class Tela extends JFrame {
 
 					lblImagemOriginal.setIcon(new ImageIcon(imagemOriginal.getImagem()));
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
-					
+
 					lblImagemOriginal_1.setText("Imagem Original");
 					lblImagemFiltrada.setText("Imagem Filtrada");
 
@@ -196,7 +215,7 @@ public class Tela extends JFrame {
 				}
 			}
 		});
-		btnImportarImagem.setBounds(249, 11, 115, 23);
+		btnImportarImagem.setBounds(249, 11, 149, 23);
 		pnlImagens.add(btnImportarImagem);
 
 		btnNewButton_1 = new JButton("Resetar Imagem");
@@ -205,151 +224,132 @@ public class Tela extends JFrame {
 				if (imagemOriginal != null) {
 					imagemFiltrada.setImagem(imagemOriginal.copiarImagem(imagemOriginal.getImagem()));
 					lblImagemAlterada.setIcon(new ImageIcon(imagemFiltrada.getImagem()));
-				}
-				else{
+				} else {
 					System.out.println("Clicoou!");
 				}
 			}
 		});
-		btnNewButton_1.setBounds(249, 40, 114, 23);
+		btnNewButton_1.setBounds(249, 40, 149, 23);
 		pnlImagens.add(btnNewButton_1);
 
 		JLabel lblFiltro = new JLabel("Filtro:");
 		lblFiltro.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		lblFiltro.setBounds(13, 12, 46, 14);
 		pnlImagens.add(lblFiltro);
-		
+
 		lblImagemOriginal_1 = new JLabel("");
 		lblImagemOriginal_1.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		lblImagemOriginal_1.setBounds(134, 125, 115, 20);
 		pnlImagens.add(lblImagemOriginal_1);
-		
+
 		lblImagemFiltrada = new JLabel("");
 		lblImagemFiltrada.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		lblImagemFiltrada.setBounds(499, 125, 115, 20);
 		pnlImagens.add(lblImagemFiltrada);
 	}
-	
-	public BufferedImage Quantizacao( Imagem imagem ){
+
+	public BufferedImage Quantizacao(Imagem imagem) {
 		int tons;
 		int tomAtual;
 		RGB rgb;
-		
-		tons = 256 / ( Integer.parseInt( textField.getText() ) - 1 );
-		
-		for( int j = 0; j < imagem.getColunas(); j++ ){
-			for( int i = 0; i < imagem.getLinhas(); i++ ){
-				rgb = new RGB( imagem.getImagem().getRGB( j, i ) );
+
+		tons = 256 / (Integer.parseInt(textField.getText()) - 1);
+
+		for (int j = 0; j < imagem.getColunas(); j++) {
+			for (int i = 0; i < imagem.getLinhas(); i++) {
+				rgb = new RGB(imagem.getImagem().getRGB(j, i));
 				tomAtual = 0;
-		        
-		        while( rgb.getRed() > tomAtual )
-		        {
-		        	tomAtual += tons;
-		        }
-		        
-		        if(tomAtual > 255)
-		        {
-		        	imagem.getImagem().setRGB( j,
-		        				   			   i,
-		        				   			   new Color(255, 255, 255).getRGB() );
-		        }
-		        else
-		        {
-		        	imagem.getImagem().setRGB( j,
-		        				   			   i,
-		        				   			   new Color(tomAtual, tomAtual, tomAtual).getRGB() );
-		        }
+
+				while (rgb.getRed() > tomAtual) {
+					tomAtual += tons;
+				}
+
+				if (tomAtual > 255) {
+					imagem.getImagem().setRGB(j, i, new Color(255, 255, 255).getRGB());
+				} else {
+					imagem.getImagem().setRGB(j, i, new Color(tomAtual, tomAtual, tomAtual).getRGB());
+				}
 			}
 		}
-		
+
 		return imagem.getImagem();
 	}
-	
-	public BufferedImage Binarizacao( Imagem imagem ){
+
+	public BufferedImage Binarizacao(Imagem imagem) {
 		int limiar;
 		int tipoBinarizacao;
 		RGB rgb;
-		
-		limiar = Integer.parseInt( textField.getText() ) - 1;
 
-		tipoBinarizacao = JOptionPane.showOptionDialog( new JFrame(),
-														"Aplicar binarização comum ou inversa?",
-														"Binarização",
-														JOptionPane.YES_NO_OPTION,
-														JOptionPane.QUESTION_MESSAGE,
-														null,
-														new Object[]{ "Comum", "Inversa" },
-														null );
-		
-		for( int j = 0; j < imagem.getColunas(); j++ ){
-			for( int i = 0; i < imagem.getLinhas(); i++ ){
-				rgb = new RGB( imagem.getImagem().getRGB(j, i) );
+		limiar = Integer.parseInt(textField.getText()) - 1;
 
-				if( tipoBinarizacao == JOptionPane.YES_OPTION ){
-					if( rgb.getRed() < limiar ){
-						imagem.getImagem().setRGB( j,
-												   i,
-												   new Color(0, 0, 0).getRGB() );
-					}
-					else{
-						imagem.getImagem().setRGB( j,
-												   i,
-												   new Color(255, 255, 255).getRGB() );
-					}
+		for (int j = 0; j < imagem.getColunas(); j++) {
+			for (int i = 0; i < imagem.getLinhas(); i++) {
+				rgb = new RGB(imagem.getImagem().getRGB(j, i));
+
+				if (rgb.getRed() < limiar) {
+					imagem.getImagem().setRGB(j, i, new Color(0, 0, 0).getRGB());
+				} else {
+					imagem.getImagem().setRGB(j, i, new Color(255, 255, 255).getRGB());
 				}
-				
-				else{
-					if( rgb.getRed() < limiar ){
-						imagem.getImagem().setRGB( j,
-												   i,
-												   new Color(255, 255, 255).getRGB() );
-					}
-					else{
-						imagem.getImagem().setRGB( j,
-												   i,
-												   new Color(0, 0, 0).getRGB() );
-					}
-				}
+
 			}
 		}
-		
+
 		return imagem.getImagem();
 	}
-	
-	public BufferedImage Equalizacao( Imagem imagem, int[] histograma ){
+
+	public BufferedImage Equalizacao(Imagem imagem, int[] histograma) {
 		int histogramaAux[];
 		long soma;
 		float fatorEscala;
 		int valor;
 		RGB rgb;
-		
-		histogramaAux = new int[ 256 ];
+
+		histogramaAux = new int[256];
 		soma = 0;
-		fatorEscala = ( float ) ( 255.0 / ( imagem.getColunas() * imagem.getLinhas() ) );
+		fatorEscala = (float) (255.0 / (imagem.getColunas() * imagem.getLinhas()));
 		valor = 0;
-		
-		for( int i = 0; i < histograma.length; i++ ){
-			soma += histograma[ i ];
-			valor = ( int )( soma * fatorEscala );
-			
-			if( valor > 255 ){
-				histogramaAux[ i ] = 255;
-			}
-			else{
-				histogramaAux[ i ] = valor;
-			}
-		}
-		
-		for( int j = 0; j < imagem.getColunas(); j++ ){
-			for ( int i = 0; i < imagem.getLinhas(); i++ ){
-				rgb = new RGB( imagem.getImagem().getRGB( j, i ) );
-		        imagem.getImagem().setRGB( j, i, new Color(	histogramaAux[ rgb.getRed() ],
-		    		   										histogramaAux[ rgb.getRed() ],
-		    		   										histogramaAux[ rgb.getRed() ] ).getRGB() );
+
+		for (int i = 0; i < histograma.length; i++) {
+			soma += histograma[i];
+			valor = (int) (soma * fatorEscala);
+
+			if (valor > 255) {
+				histogramaAux[i] = 255;
+			} else {
+				histogramaAux[i] = valor;
 			}
 		}
-		/**/
-		
+
+		for (int j = 0; j < imagem.getColunas(); j++) {
+			for (int i = 0; i < imagem.getLinhas(); i++) {
+				rgb = new RGB(imagem.getImagem().getRGB(j, i));
+				imagem.getImagem().setRGB(j, i,
+						new Color(histogramaAux[rgb.getRed()], histogramaAux[rgb.getRed()], histogramaAux[rgb.getRed()])
+								.getRGB());
+			}
+		}
+
+		return imagem.getImagem();
+	}
+
+	public BufferedImage AplicaMascara(BufferedImage bi, int tipo, float[] filtro) {
+		Kernel kernel;
+		BufferedImageOp bIOp;
+		kernel = new Kernel(tipo, tipo, filtro);
+		bIOp = new ConvolveOp(kernel);
+		return bIOp.filter(bi, null);
+	}
+
+	public BufferedImage PassaAlta(Imagem imagem) {
+		float[] passaAltaNormal = { -1, -1, -1, -1, 8, -1, -1, -1, -1 };
+		imagem.setImagem(AplicaMascara(imagem.getImagem(), 3, passaAltaNormal));
+		return imagem.getImagem();
+	}
+
+	public BufferedImage OperadorRoberts(Imagem imagem) {
+		float[] operadorRoberts = { 0, 1, -1, 0 };
+		imagem.setImagem(AplicaMascara(imagem.getImagem(), 2, operadorRoberts));
 		return imagem.getImagem();
 	}
 }
